@@ -61,43 +61,29 @@ exports.addRatingToBook = (req, res, next) => {
     console.log('Start addRatingToBook', { userId: req.auth.userId, body: req.body });
 
     const userId = req.auth.userId;
-    const grade = parseInt(req.body.rating, 10);
-
-    if (isNaN(grade) || grade < 1 || grade > 5) {
-        console.log('Invalid rating', grade);
-        return res.status(400).json({ message: "La note doit être entre 1 et 5." });
-    }
-
+    const grade = Number(req.body.rating);
     const userRating = { userId, grade };
     console.log('User rating to add', userRating);
 
-   
     console.log('Book ID:', req.params.id);
 
-    Book.findByIdAndUpdate(
-        req.params.id,
-        { $push: { ratings: userRating } },
-        { new: true }
-    )
-    .then(book => {
-        if (!book) {
-            console.log('No book found with ID:', req.params.id);
-            return res.status(404).json({ message: 'Livre non trouvé' });
-        }
-        
-        console.log('Book found:', book);
-        const sumRatings = book.ratings.reduce((sum, rating) => sum + rating.grade, 0);
-        book.averageRating = sumRatings / book.ratings.length;
-        console.log('Calculated average rating:', book.averageRating);
+    Book.findOne({ _id: req.params.id })
+        .then(book => {
+            if (!book) {
+                console.log('No book found with ID:', req.params.id);
+                return res.status(404).json({ message: 'Livre non trouvé' });
+            }
 
-        return book.save();
-    })
-    .then(book => {
-        console.log('Book saved with new rating:', book);
-        res.status(200).json({ message: 'Note ajoutée !', book });
-    })
-    .catch(error => {
-        console.error('Error in addRatingToBook:', error);
-        res.status(500).json({ error });
-    });
+            book.ratings.push(userRating);
+            
+            const sumRatings = book.ratings.reduce((sum, rating) => sum + rating.grade, 0);
+            book.averageRating = sumRatings / book.ratings.length;
+
+            return book.save();
+        })
+        .then(book => res.json(book)) // Envoie directement le livre sauvegardé au client
+        .catch(error => {
+            console.error('Error in addRatingToBook:', error);
+            res.status(500).json({ error });
+        });
 };
