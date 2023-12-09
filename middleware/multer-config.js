@@ -18,9 +18,9 @@ module.exports = (req, res, next) => {
     const newFilename = name + Date.now() + '.webp';
 
     sharp(req.file.buffer)
-      .resize(500)
+      .resize(200)
       .toFormat('webp')
-      .webp({ quality: 50 })
+      .webp({ quality: 20 })
       .toFile(path.join('images', newFilename), (err) => {
         if (err) {
           return res.status(500).json({ error: 'Erreur lors du traitement de l\'image' });
